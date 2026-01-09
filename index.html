@@ -1,111 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>EAC3 Preview Player</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>HTML Preview & Download</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #1e1e1e;
+      color: white;
+      display: flex;
+      height: 100vh;
+    }
 
-<style>
-  body {
-    background: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 10px;
-  }
-  video {
-    width: 100%;
-    max-height: 70vh;
-    background: black;
-  }
-  button {
-    padding: 10px 15px;
-    margin: 5px;
-    font-size: 16px;
-  }
-</style>
+    textarea {
+      width: 50%;
+      height: 100%;
+      background: #111;
+      color: #0f0;
+      padding: 15px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      resize: none;
+    }
+
+    .right {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    iframe {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+
+    .controls {
+      padding: 10px;
+      background: #222;
+      text-align: center;
+    }
+
+    button {
+      padding: 8px 15px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
 </head>
-
 <body>
 
-<h3>EAC3 Video Preview Player</h3>
+<textarea id="editor">
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Hello World</h1>
+  <p>Edit this HTML</p>
+</body>
+</html>
+</textarea>
 
-<input type="file" id="fileInput" accept="video/*"><br><br>
-<button id="convertBtn">▶ Convert & Play</button>
-
-<br><br>
-
-<video id="video" controls></video>
-
-<div>
-  <button onclick="skip(-10)">⏪ 10s</button>
-  <button onclick="skip(10)">⏩ 10s</button>
+<div class="right">
+  <div class="controls">
+    <button onclick="preview()">Preview</button>
+    <button onclick="download()">Download HTML</button>
+  </div>
+  <iframe id="preview"></iframe>
 </div>
 
-<p id="status"></p>
-
-<!-- FFmpeg WASM -->
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
-
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
-
-const fileInput = document.getElementById("fileInput");
-const video = document.getElementById("video");
-const status = document.getElementById("status");
-
-document.getElementById("convertBtn").onclick = async () => {
-  const file = fileInput.files[0];
-  if (!file) return alert("Select a video first");
-
-  status.innerText = "⏳ Loading FFmpeg...";
-  if (!ffmpeg.isLoaded()) await ffmpeg.load();
-
-  status.innerText = "📂 Reading file...";
-  ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
-
-  status.innerText = "🎧 Converting EAC3 → AAC (wait)...";
-
-  await ffmpeg.run(
-    "-i", "input.mp4",
-    "-map", "0:v:0",
-    "-map", "0:a:0",
-    "-c:v", "copy",
-    "-c:a", "aac",
-    "-b:a", "192k",
-    "output.mp4"
-  );
-
-  status.innerText = "▶ Playing video...";
-
-  const data = ffmpeg.FS("readFile", "output.mp4");
-  const url = URL.createObjectURL(
-    new Blob([data.buffer], { type: "video/mp4" })
-  );
-
-  video.src = url;
-  video.play();
-};
-
-// skip seconds
-function skip(sec) {
-  video.currentTime += sec;
+function preview() {
+  const code = document.getElementById("editor").value;
+  const iframe = document.getElementById("preview");
+  iframe.srcdoc = code;
 }
 
-// hold screen for 1.5x speed
-let holdTimer;
-
-video.addEventListener("touchstart", () => {
-  holdTimer = setTimeout(() => {
-    video.playbackRate = 1.5;
-  }, 300);
-});
-
-video.addEventListener("touchend", () => {
-  clearTimeout(holdTimer);
-  video.playbackRate = 1;
-});
+function download() {
+  const code = document.getElementById("editor").value;
+  const blob = new Blob([code], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "index.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 </script>
 
 </body>
