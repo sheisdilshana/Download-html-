@@ -2,23 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Preview Video Player</title>
+<title>EAC3 Preview Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
   body {
     background: #000;
-    color: white;
-    font-family: Arial;
+    color: #fff;
+    font-family: Arial, sans-serif;
     text-align: center;
+    padding: 10px;
   }
   video {
     width: 100%;
     max-height: 70vh;
-  }
-  .controls {
-    margin-top: 10px;
+    background: black;
   }
   button {
-    padding: 10px;
+    padding: 10px 15px;
     margin: 5px;
     font-size: 16px;
   }
@@ -27,31 +28,65 @@
 
 <body>
 
-<h3>Video Preview Player</h3>
+<h3>EAC3 Video Preview Player</h3>
 
-<input type="file" id="fileInput" accept="video/*">
+<input type="file" id="fileInput" accept="video/*"><br><br>
+<button id="convertBtn">▶ Convert & Play</button>
 
 <br><br>
 
 <video id="video" controls></video>
 
-<div class="controls">
+<div>
   <button onclick="skip(-10)">⏪ 10s</button>
   <button onclick="skip(10)">⏩ 10s</button>
 </div>
 
+<p id="status"></p>
+
+<!-- FFmpeg WASM -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+
 <script>
-const video = document.getElementById("video");
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: true });
+
 const fileInput = document.getElementById("fileInput");
+const video = document.getElementById("video");
+const status = document.getElementById("status");
 
-fileInput.addEventListener("change", () => {
+document.getElementById("convertBtn").onclick = async () => {
   const file = fileInput.files[0];
-  if (!file) return;
+  if (!file) return alert("Select a video first");
 
-  const url = URL.createObjectURL(file);
+  status.innerText = "⏳ Loading FFmpeg...";
+  if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+  status.innerText = "📂 Reading file...";
+  ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
+
+  status.innerText = "🎧 Converting EAC3 → AAC (wait)...";
+
+  await ffmpeg.run(
+    "-i", "input.mp4",
+    "-map", "0:v:0",
+    "-map", "0:a:0",
+    "-c:v", "copy",
+    "-c:a", "aac",
+    "-b:a", "192k",
+    "output.mp4"
+  );
+
+  status.innerText = "▶ Playing video...";
+
+  const data = ffmpeg.FS("readFile", "output.mp4");
+  const url = URL.createObjectURL(
+    new Blob([data.buffer], { type: "video/mp4" })
+  );
+
   video.src = url;
   video.play();
-});
+};
 
 // skip seconds
 function skip(sec) {
