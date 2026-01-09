@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Preview Video Player</title>
+<style>
+  body {
+    background: #000;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+  }
+  video {
+    width: 100%;
+    max-height: 70vh;
+  }
+  .controls {
+    margin-top: 10px;
+  }
+  button {
+    padding: 10px;
+    margin: 5px;
+    font-size: 16px;
+  }
+</style>
+</head>
+
+<body>
+
+<h3>Video Preview Player</h3>
+
+<input type="file" id="fileInput" accept="video/*">
+
+<br><br>
+
+<video id="video" controls></video>
+
+<div class="controls">
+  <button onclick="skip(-10)">⏪ 10s</button>
+  <button onclick="skip(10)">⏩ 10s</button>
+</div>
+
+<script>
+const video = document.getElementById("video");
+const fileInput = document.getElementById("fileInput");
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+  video.src = url;
+  video.play();
+});
+
+// skip seconds
+function skip(sec) {
+  video.currentTime += sec;
+}
+
+// hold screen for 1.5x speed
+let holdTimer;
+
+video.addEventListener("touchstart", () => {
+  holdTimer = setTimeout(() => {
+    video.playbackRate = 1.5;
+  }, 300);
+});
+
+video.addEventListener("touchend", () => {
+  clearTimeout(holdTimer);
+  video.playbackRate = 1;
+});
+</script>
+
+</body>
+</html>
